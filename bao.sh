@@ -81,7 +81,7 @@ function bao-upload-image() {
 }
 
 function bao-sync-data-rev() {
-    bao bash env/sync.sh sync-rev $REVNUM $DATALEVEL
+    bao bash env/sync.sh sync-rev ${1:?} ${2:-cons}
 }
 
 
@@ -104,6 +104,9 @@ function bao-list-functions() {
 
 function bao-upload-workflow() {
     workflow_dir=${1:?}
+
+    bao-update-env
+
     workflow_dir=$(realpath $workflow_dir)
 
     workflow_version=$(find $workflow_dir -type f -exec md5sum {} \; | md5sum | cut -c1-8)
@@ -120,15 +123,43 @@ function bao-upload-workflow() {
         bao-upload-dir $workflow_dir $workflow_remote_path
         bao-store-fact $fact
     fi
+        
+    echo "$ workflow_remote_path: $workflow_remote_path" 
+
 
     #for t0 in $(cat utc-gbm.json | shuf -n 10); do t0=$t0 bash submit.sh ; done
 }
 
+function bao-run-workflow() {
+    workflow_dir=${1:?}
+    setenv=${2:-}
+
+    bao-upload-workflow $workflow_dir 
+    workflow_remote_path=$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
+    workflow_cmd=$(< $workflow_dir/oda.yaml yq -r .entrypoint)
+
+    echo "export $setenv; $workflow_cmd" | bao "cat -> $workflow_remote_path/auto-entrypoint.sh"
+    bao "cat $workflow_remote_path/auto-entrypoint.sh"
+    bao "cd $workflow_remote_path; bash auto-entrypoint.sh" 
+}
 
 function bao-submit-array() {
-    arglist=${1:?}
+    workflow_dir=${1:?}
+    argvar=${2:?}
+    arglist=${3:?}
 
-    for t0 in $(cat utc-gbm.json | shuf -n 10); do t0=$t0 bash submit.sh ; done
+    workflow_remote_path=$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
+
+    taskid=$(date +%s)
+    taskdir=$workflow_remote_path/tasks/$taskid
+
+    bao mkdir pv $taskdir
+
+    < $arglist awk 'BEGIN {printf "export "} {printf "'$argvar'="$1}' bao "cat -> $taskdir/envlist.sh"
+    
+    
+
+ #   for t0 in $(cat utc-gbm.json | shuf -n 10); do t0=$t0 bash submit.sh ; done
 }
 
 
