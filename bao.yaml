@@ -1,2 +1,3 @@
 sshfs_mountpoint: $HOME/mnt/bao
-bao_share: $HOME/.local/share
+#bao_share: $HOME/.local/share
+local_ddcache: /data/reduced/ddcache/

@@ -46,37 +46,45 @@ function bao-login() {
 
 
 function bao-update-env() { 
-        bao_env_version=$(find $HOME/.local/share/bao -type f -exec md5sum {} \; | md5sum | cut -c1-8)
+    bao_env_version=$(find $HOME/.local/share/bao -type f -exec md5sum {} \; | md5sum | cut -c1-8)
 
-        fact=remote-env-installed/$bao_env_version
+    fact=remote-env-installed/$bao_env_version
 
-        if bao-ask-fact $fact; then
-            echo "bao remotely available $fact"
-        else
-            echo "bao not remotely available $fact, installing"
-            bao mkdir -pv env
-            (cd $HOME/.local/share/bao; ls -ltor; tar cvf - init.sh sync.sh ssh-config | bao "tar xvf - -C env")
-            bao 'mv env/ssh-config ~/.ssh/config'
-            bao-store-fact $fact
-        fi
+    if bao-ask-fact $fact; then
+        echo "bao remotely available $fact"
+    else
+        echo "bao not remotely available $fact, installing"
+        bao mkdir -pv env
+        (cd $HOME/.local/share/bao; ls -ltor; tar cvf - init.sh sync.sh ssh-config | bao "tar xvf - -C env")
+        bao 'mv env/ssh-config ~/.ssh/config'
+        bao-store-fact $fact
+    fi
 }
 
 function bao-upload-image() {
-	bao-upload-image.sh
+    bao-upload-image.sh
 }
 
-function sync-data-rev() {
-	bao bash env/sync.sh sync-rev $REVNUM $DATALEVEL
+function bao-sync-data-rev() {
+    bao bash env/sync.sh sync-rev $REVNUM $DATALEVEL
 }
 
 
-function sync-ic() {
-	bao bash env/sync.sh sync-ic 
+function bao-sync-ic() {
+    bao bash env/sync.sh sync-ic 
 }
 
 
 function bao-pull() {
-	bao bash pwd
+    pattern=${1:?}
+
+    bao tar cvzf - scratch/data/reduced/ddcache/$pattern | tar xvzf - -C $(bao-get-config .local_ddcache) --strip-components=4
+}
+
+function bao-list-functions() {
+    ABSOLUTE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+
+    < $ABSOLUTE_PATH awk -F'[ (]' '/function bao-/ {print $2}'
 }
 
 

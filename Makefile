@@ -7,4 +7,8 @@ install: bao.sh bao.yaml
 	for f in $(shell ls share); do \
             install -m 400 -v share/$$f $$HOME/.local/share/bao/$$f; \
 	done
+	for fn in $(shell bao bao-list-functions | sort -u | grep ^bao); do \
+            echo "bao $$fn "'$$@' > $$HOME/.local/bin/$$fn; \
+	    chmod +x $$HOME/.local/bin/$$fn; \
+        done
     
