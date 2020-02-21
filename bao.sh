@@ -150,16 +150,38 @@ function bao-submit-array() {
 
     workflow_remote_path=$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
 
-    taskid=$(date +%s)
-    taskdir=$workflow_remote_path/tasks/$taskid
+    taskid=${taskid:-$(date +%s)}
+    taskdir=$workflow_remote_path/arrays/$taskid
 
-    bao mkdir pv $taskdir
+    bao mkdir -pv $taskdir/logs
 
-    < $arglist awk 'BEGIN {printf "export "} {printf "'$argvar'="$1}' bao "cat -> $taskdir/envlist.sh"
+    < $arglist awk '{print "export '$argvar'="$1}' | bao "cat -> $taskdir/envlist.sh"
     
-    
+    echo "
+        cd $taskdir
+        i=0
+        while IFS="" read -r p;  do (
+            echo \$p
+            eval \$p
+            sbatch --mem-per-cpu 16000  --partition mono-shared-EL7 --export=ALL --output $taskdir/\$i \$HOME/$workflow_remote_path/submit.sh
+        ); let 'i++'; done < envlist.sh 
+    " | bao "cat -> $taskdir/submit-array.sh"
 
- #   for t0 in $(cat utc-gbm.json | shuf -n 10); do t0=$t0 bash submit.sh ; done
+    bao cat $taskdir/submit-array.sh
+    bao cat $taskdir/envlist.sh
+
+    bao bash $taskdir/submit-array.sh
+}
+
+
+function bao-upload-images() {
+    pattern=${1:?}
+
+    bao mkdir -pv scratch/singularity
+
+    for fn in /data/singularity/*/$pattern; do
+        cat $fn | pv  | bao "cat - > scratch/singularity/$(basename $fn)"
+    done
 }
 
 
