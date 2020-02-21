@@ -45,6 +45,21 @@ function bao-login() {
 }
 
 
+function bao-upload-dir() {
+    local_dir=${1:?}
+    remote_dir=${2:?}
+
+    bao mkdir -pv $remote_dir
+    (cd $local_dir; ls -ltor; tar cvf - * | bao "tar xvf - -C $remote_dir")
+}
+
+function bao-download-dir() {
+    remote_dir=${1:?}
+    local_dir=${2:?}
+
+    bao tar cvzf - $remote_dir | tar xvzf - -C $local_dir --strip-components=4
+}
+
 function bao-update-env() { 
     bao_env_version=$(find $HOME/.local/share/bao -type f -exec md5sum {} \; | md5sum | cut -c1-8)
 
@@ -55,7 +70,7 @@ function bao-update-env() {
     else
         echo "bao not remotely available $fact, installing"
         bao mkdir -pv env
-        (cd $HOME/.local/share/bao; ls -ltor; tar cvf - init.sh sync.sh ssh-config | bao "tar xvf - -C env")
+        bao-upload-dir $HOME/.local/share/bao env
         bao 'mv env/ssh-config ~/.ssh/config'
         bao-store-fact $fact
     fi
@@ -78,13 +93,42 @@ function bao-sync-ic() {
 function bao-pull() {
     pattern=${1:?}
 
-    bao tar cvzf - scratch/data/reduced/ddcache/$pattern | tar xvzf - -C $(bao-get-config .local_ddcache) --strip-components=4
+    bao-download-dir scratch/data/reduced/ddcache/$pattern  $(bao-get-config .local_ddcache)
 }
 
 function bao-list-functions() {
     ABSOLUTE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 
     < $ABSOLUTE_PATH awk -F'[ (]' '/function bao-/ {print $2}'
+}
+
+function bao-upload-workflow() {
+    workflow_dir=${1:?}
+    workflow_dir=$(realpath $workflow_dir)
+
+    workflow_version=$(find $workflow_dir -type f -exec md5sum {} \; | md5sum | cut -c1-8)
+
+    workflow_remote_path=workflows/$(basename $workflow_dir)/$workflow_version
+
+    fact=uploaded/$workflow_remote_path
+
+    if bao-ask-fact $fact; then
+        echo "already uploaded"
+    else
+        echo "workflow $workflow_dir version/hash $workflow_version to $workflow_remote_path"
+
+        bao-upload-dir $workflow_dir $workflow_remote_path
+        bao-store-fact $fact
+    fi
+
+    #for t0 in $(cat utc-gbm.json | shuf -n 10); do t0=$t0 bash submit.sh ; done
+}
+
+
+function bao-submit-array() {
+    arglist=${1:?}
+
+    for t0 in $(cat utc-gbm.json | shuf -n 10); do t0=$t0 bash submit.sh ; done
 }
 
 
