@@ -1,1 +1,2 @@
 sshfs_mountpoint: $HOME/mnt/bao
+bao_share: $HOME/.local/share

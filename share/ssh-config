@@ -1,0 +1,4 @@
+Host isdc-in01
+  ProxyCommand ssh -Y login02.astro.unige.ch -W %h:%p
+  ForwardX11 yes
+
