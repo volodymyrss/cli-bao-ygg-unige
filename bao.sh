@@ -192,6 +192,14 @@ function bao-upload-images() {
     done
 }
 
+function bao-tail-last-job() {
+    bao 'tail -n 100 -f $(ls -tr workflows/*/*/*/*/*/* | tail -1) '
+}
+
+function bao-squeue() {
+    bao squeue -u $(whoami)
+}
+
 
 if echo $action | grep ^bao-; then
     $action $args
