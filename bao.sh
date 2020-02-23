@@ -148,6 +148,8 @@ function bao-submit-array() {
     argvar=${2:?}
     arglist=${3:?}
 
+    echo "submitting to ${partition:=mono-shared-EL7}"
+
     workflow_remote_path=$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
 
     taskid=${taskid:-$(date +%s)}
@@ -156,14 +158,20 @@ function bao-submit-array() {
     bao mkdir -pv $taskdir/logs
 
     < $arglist awk '{print "export '$argvar'="$1}' | bao "cat -> $taskdir/envlist.sh"
+
     
     echo "
+        export JOB_DIR=\$HOME/$workflow_remote_path
         cd $taskdir
         i=0
         while IFS="" read -r p;  do (
             echo \$p
+            sp=\$(echo \$p | awk '{print \$2}' | sed 's/[^a-zA-Z0-9 -]/_/g')
+            dgst=\$(echo \$p | md5sum | cut -c 1-8)
+            echo "job \$sp, \$dgst"
+
             eval \$p
-            sbatch --mem-per-cpu 16000  --partition mono-shared-EL7 --export=ALL --output $taskdir/\$i \$HOME/$workflow_remote_path/submit.sh
+            sbatch --mem-per-cpu 16000  --partition ${partition} --export=ALL --output \$HOME/$taskdir/logs/\${dgst}-\${sp} \$HOME/$workflow_remote_path/submit.sh
         ); let 'i++'; done < envlist.sh 
     " | bao "cat -> $taskdir/submit-array.sh"
 
