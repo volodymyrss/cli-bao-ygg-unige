@@ -37,11 +37,11 @@ function bao-mount() {
     echo "mounting as $mountpoint"
     fusermount -u $mountpoint || echo 'can not unmount'
     mkdir -pv $mountpoint
-    sshfs baobab2.unige.ch:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige savchenk)' ssh';
+    sshfs baobab2.unige.ch:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige $(whoami))' ssh';
 }
 
 function bao-login() {
-    sshpass -f <(keyring get unige savchenk) ssh -Y baobab2.unige.ch $@;
+    sshpass -f <(keyring get unige $(whoami)) ssh -Y baobab2.unige.ch $@;
 }
 
 
@@ -201,6 +201,18 @@ function bao-tail-last-job() {
 
 function bao-less-last-job() {
     bao 'cat  $(ls -tr workflows/*/*/*/*/*/* | tail -1) ' | less -R
+}
+
+function bao-last-logs() {
+    patt=${1:?}
+    bao 'find workflows -name \*'"${patt}"'\*  | xargs ls -ltro'
+}
+
+function bao-get-logs() {
+    patt=${1:?}
+    log=$(bao 'find workflows -name \*'"${patt}"'\*  | xargs ls -tr | tail -1')
+    echo "found $log"
+    bao "cat $log" 
 }
 
 function bao-squeue() {
