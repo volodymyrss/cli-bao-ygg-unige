@@ -171,7 +171,10 @@ function bao-submit-array() {
             echo "job \$sp, \$dgst"
 
             eval \$p
-            sbatch --mem-per-cpu 16000  --partition ${partition} --export=ALL --output \$HOME/$taskdir/logs/\${dgst}-\${sp} \$HOME/$workflow_remote_path/submit.sh
+
+            export logfile=\$HOME/$taskdir/logs/\${dgst}-\${sp}
+
+            sbatch --mem-per-cpu 16000  --partition ${partition} --export=ALL --output \$logfile \$HOME/$workflow_remote_path/submit.sh
         ); let 'i++'; done < envlist.sh 
     " | bao "cat -> $taskdir/submit-array.sh"
 
@@ -194,6 +197,10 @@ function bao-upload-images() {
 
 function bao-tail-last-job() {
     bao 'tail -n 100 -f $(ls -tr workflows/*/*/*/*/*/* | tail -1) '
+}
+
+function bao-less-last-job() {
+    bao 'cat  $(ls -tr workflows/*/*/*/*/*/* | tail -1) ' | less -R
 }
 
 function bao-squeue() {
