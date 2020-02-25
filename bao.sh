@@ -130,17 +130,38 @@ function bao-upload-workflow() {
     #for t0 in $(cat utc-gbm.json | shuf -n 10); do t0=$t0 bash submit.sh ; done
 }
 
+function bao-workflow-remote-path() {
+    echo '$HOME/'$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
+}
+
+function bao-workflow-prep-entrypoint() {
+    workflow_dir=${1:?}
+
+    workflow_remote_path=$(bao-workflow-remote-path)
+
+    echo "
+        #!/bin/bash
+        #SBATCH --ntasks 1
+        #SBATCH --time=03:00:00
+
+        export ODA_WORKFLOW_OUTPUT_PATH=\$(cat $workflow_remote_path/oda-cache.sh)
+        export ODA_JOB_DIR=$workflow_remote_path
+        bash $workflow_remote_path/entrypoint.sh
+    " | awk 'NR>1' | cut -c9-1000 | bao "cat -> $workflow_remote_path/auto-entrypoint.sh"
+
+    echo "--> $workflow_remote_path/auto-entrypoint.sh"
+    bao cat $workflow_remote_path/auto-entrypoint.sh
+}
+
 function bao-run-workflow() {
     workflow_dir=${1:?}
     setenv=${2:-}
 
-    bao-upload-workflow $workflow_dir 
-    workflow_remote_path=$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
-    workflow_cmd=$(< $workflow_dir/oda.yaml yq -r .entrypoint)
+    workflow_remote_path=$(bao-workflow-remote-path)
+    bao-workflow-prep-entrypoint $workflow_dir
 
-    echo "export $setenv; $workflow_cmd" | bao "cat -> $workflow_remote_path/auto-entrypoint.sh"
     bao "cat $workflow_remote_path/auto-entrypoint.sh"
-    bao "cd $workflow_remote_path; bash auto-entrypoint.sh" 
+    bao "cd $workflow_remote_path; export $setenv TMPDIR=\$HOME/scratch/tmp-run ; bash auto-entrypoint.sh" 
 }
 
 function bao-submit-array() {
@@ -150,7 +171,8 @@ function bao-submit-array() {
 
     echo "submitting to ${partition:=mono-shared-EL7}"
 
-    workflow_remote_path=$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
+    workflow_remote_path=$(bao-workflow-remote-path)
+    bao-workflow-prep-entrypoint $workflow_dir
 
     taskid=${taskid:-$(date +%s)}
     taskdir=$workflow_remote_path/arrays/$taskid
@@ -161,7 +183,7 @@ function bao-submit-array() {
 
     
     echo "
-        export JOB_DIR=\$HOME/$workflow_remote_path
+        export ODA_JOB_DIR=$workflow_remote_path
         cd $taskdir
         i=0
         while IFS="" read -r p;  do (
@@ -172,9 +194,9 @@ function bao-submit-array() {
 
             eval \$p
 
-            export logfile=\$HOME/$taskdir/logs/\${dgst}-\${sp}
+            export logfile=$taskdir/logs/\${dgst}-\${sp}
 
-            sbatch --mem-per-cpu 16000  --partition ${partition} --export=ALL --output \$logfile \$HOME/$workflow_remote_path/submit.sh
+            sbatch --mem-per-cpu 16000  --partition ${partition} --export=ALL --output \$logfile $workflow_remote_path/auto-entrypoint.sh
         ); let 'i++'; done < envlist.sh 
     " | bao "cat -> $taskdir/submit-array.sh"
 
@@ -203,9 +225,9 @@ function bao-less-last-job() {
     bao 'cat  $(ls -tr workflows/*/*/*/*/*/* | tail -1) ' | less -R
 }
 
-function bao-last-logs() {
+function bao-list-logs() {
     patt=${1:?}
-    bao 'find workflows -name \*'"${patt}"'\*  | xargs ls -ltro'
+    bao 'find workflows -wholename \*'"${patt}"'\*  | xargs ls -ltro'
 }
 
 function bao-get-logs() {
@@ -217,6 +239,18 @@ function bao-get-logs() {
 
 function bao-squeue() {
     bao squeue -u $(whoami)
+}
+
+function bao-upload-token() {
+    python gentoken.py -o jwt 
+    cat jwt | bao 'cat -> .dataapi-jwt' 
+    rm -fv jwt
+}
+
+# exceptions
+
+function bao-find-exceptions() {
+    echo
 }
 
 
