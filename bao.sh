@@ -144,7 +144,7 @@ function bao-workflow-prep-entrypoint() {
         #SBATCH --ntasks 1
         #SBATCH --time=03:00:00
 
-        export ODA_WORKFLOW_OUTPUT_PATH=\$(cat $workflow_remote_path/oda-cache.sh)
+        export ODA_WORKFLOW_OUTPUT_PATH=\$(bash $workflow_remote_path/oda-cache.sh)
         export ODA_JOB_DIR=$workflow_remote_path
         bash $workflow_remote_path/entrypoint.sh
     " | awk 'NR>1' | cut -c9-1000 | bao "cat -> $workflow_remote_path/auto-entrypoint.sh"
@@ -196,6 +196,9 @@ function bao-submit-array() {
 
             export logfile=$taskdir/logs/\${dgst}-\${sp}
 
+            echo -n 'submitted at ' > \$logfile
+            date >>  \$logfile
+
             sbatch --mem-per-cpu 16000  --partition ${partition} --export=ALL --output \$logfile $workflow_remote_path/auto-entrypoint.sh
         ); let 'i++'; done < envlist.sh 
     " | bao "cat -> $taskdir/submit-array.sh"
@@ -225,16 +228,22 @@ function bao-less-last-job() {
     bao 'cat  $(ls -tr workflows/*/*/*/*/*/* | tail -1) ' | less -R
 }
 
-function bao-list-logs() {
-    patt=${1:?}
-    bao 'find workflows -wholename \*'"${patt}"'\*  | xargs ls -ltro'
-}
+function bao-logs() {
+    patt=${1:-\\*}
+    cmin=${2:--60}
 
-function bao-get-logs() {
-    patt=${1:?}
-    log=$(bao 'find workflows -name \*'"${patt}"'\*  | xargs ls -tr | tail -1')
-    echo "found $log"
-    bao "cat $log" 
+    logs=$(bao 'find workflows -type f -wholename \*logs\* -wholename '"${patt}"' -cmin '${cmin})
+        
+    nlogs=$(echo $logs | wc -w)
+    echo "found $nlogs logs"
+
+    if [ $nlogs == 1 ]; then
+        bao "cat $logs" 
+    else
+        echo "found many logs, please choose:"
+        bao "ls -ltor $logs"
+    fi
+    
 }
 
 function bao-squeue() {
@@ -242,7 +251,7 @@ function bao-squeue() {
 }
 
 function bao-upload-token() {
-    python gentoken.py -o jwt 
+    bao-gentoken -o jwt 
     cat jwt | bao 'cat -> .dataapi-jwt' 
     rm -fv jwt
 }
