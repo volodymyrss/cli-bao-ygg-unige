@@ -1,3 +1,5 @@
+#!/bin/bash
+
 source $HOME/env/init.sh
 
 function report-action() {
@@ -26,6 +28,16 @@ function run() {
     echo "workflow engine args: $@"
 
     (cd $workflow_dir && bash auto-entrypoint.sh)
+}
+
+function run-action() {
+    action_name=${1:?}
+    shift 1
+    action_cmd=$@
+
+    echo "running $action_name as $action_cmd"
+
+    $action_cmd
 }
 
 $@
