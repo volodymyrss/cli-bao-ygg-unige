@@ -6,6 +6,8 @@ export REP_BASE_PROD_NRT=$HOME/scratch/data/integral-nrt
 export SINGULARITY_LOCAL_REPO=$HOME/scratch/singularity/
 export DATA_ROOT=/srv/beegfs/scratch/users/s/savchenk/data/
 
+export DDCACHE_ROOT=$DATA_ROOT/reduced/ddcache
+
 chmod +x $HOME/env/workflow.sh
 (cd $HOME/env; ln -s workflow.sh workflow)
 

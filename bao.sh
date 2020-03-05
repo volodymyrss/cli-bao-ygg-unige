@@ -121,6 +121,7 @@ function bao-upload-workflow() {
         echo "workflow $workflow_dir version/hash $workflow_version to $workflow_remote_path"
 
         bao-upload-dir $workflow_dir $workflow_remote_path
+        echo $workflow_version | bao "cat -> $workflow_remote_path/workflow-version"
         bao-store-fact $fact
     fi
         
@@ -144,7 +145,11 @@ function bao-workflow-prep-entrypoint() {
         #SBATCH --ntasks 1
         #SBATCH --time=03:00:00
 
-        export ODA_WORKFLOW_OUTPUT_PATH=\$(bash $workflow_remote_path/oda-cache.sh)
+        source \$HOME/env/init.sh
+
+        export ODA_WORKFLOW_PATH=$workflow_remote_path
+        export ODA_WORKFLOW_VERSION=\$(cat $workflow_remote_path/workflow-version)
+        export ODA_WORKFLOW_OUTPUT_PATH=\$DDCACHE_ROOT/\$(bash $workflow_remote_path/oda-cache.sh)
         export ODA_JOB_DIR=$workflow_remote_path
         bash $workflow_remote_path/entrypoint.sh
     " | awk 'NR>1' | cut -c9-1000 | bao "cat -> $workflow_remote_path/auto-entrypoint.sh"
