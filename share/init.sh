@@ -5,3 +5,6 @@ export REP_BASE_PROD_NRT=$HOME/scratch/data/integral-nrt
 
 export SINGULARITY_LOCAL_REPO=$HOME/scratch/singularity/
 export DATA_ROOT=/srv/beegfs/scratch/users/s/savchenk/data/
+
+
+
