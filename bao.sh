@@ -143,7 +143,7 @@ function bao-workflow-prep-entrypoint() {
     echo "
         #!/bin/bash
         #SBATCH --ntasks 1
-        #SBATCH --time=03:00:00
+        #SBATCH --time=01:00:00
 
         source \$HOME/env/init.sh
 
@@ -267,6 +267,15 @@ function bao-upload-token() {
 function bao-find-exceptions() {
     echo
 }
+
+function bao-sacct() {
+    since=${1:-$(date +%Y-%m-%d)}
+    bao sacct --starttime 2020-03-06 --format=User,JobID,Jobname,partition,state,time,start,end,elapsed,elapsedraw,timelimitraw,MaxRss,MaxVMSize,nnodes,ncpus,nodelist
+
+    # summarize quality!
+}
+
+
 
 
 if echo $action | grep ^bao-; then
