@@ -10,7 +10,7 @@ export DATA_ROOT=/srv/beegfs/scratch/users/s/savchenk/data/
 export DDCACHE_ROOT=$DATA_ROOT/reduced/ddcache
 
 chmod +x $HOME/env/workflow.sh
-(cd $HOME/env; ln -s workflow.sh workflow)
+(cd $HOME/env; ln -fs workflow.sh workflow)
 
 export PATH=$HOME/env:$PATH
 

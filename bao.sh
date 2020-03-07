@@ -37,11 +37,20 @@ function bao-mount() {
     echo "mounting as $mountpoint"
     fusermount -u $mountpoint || echo 'can not unmount'
     mkdir -pv $mountpoint
-    sshfs baobab2.unige.ch:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige $(whoami))' ssh';
+
+    if  [ ${bao_ssh_mode:-sshpass} == "sshpass" ]; then
+        sshfs baobab2.unige.ch:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige $(whoami))' ssh';
+    else
+        sshfs baobab2.unige.ch:/ $mountpoint;
+    fi
 }
 
 function bao-login() {
-    sshpass -f <(keyring get unige $(whoami)) ssh -Y baobab2.unige.ch $@;
+    if  [ ${bao_ssh_mode:-sshpass} == "sshpass" ]; then
+        sshpass -f <(keyring get unige $(whoami)) ssh -Y baobab2.unige.ch $@;
+    else
+        ssh -Y baobab2.unige.ch $@;
+    fi
 }
 
 
@@ -151,7 +160,8 @@ function bao-workflow-prep-entrypoint() {
         export ODA_WORKFLOW_VERSION=\$(cat $workflow_remote_path/workflow-version)
         export ODA_WORKFLOW_OUTPUT_PATH=\$DDCACHE_ROOT/\$(bash $workflow_remote_path/oda-cache.sh)
         export ODA_JOB_DIR=$workflow_remote_path
-        bash $workflow_remote_path/entrypoint.sh
+
+        workflow run bash $workflow_remote_path/entrypoint.sh
     " | awk 'NR>1' | cut -c9-1000 | bao "cat -> $workflow_remote_path/auto-entrypoint.sh"
 
     echo "--> $workflow_remote_path/auto-entrypoint.sh"
@@ -165,8 +175,9 @@ function bao-run-workflow() {
     workflow_remote_path=$(bao-workflow-remote-path)
     bao-workflow-prep-entrypoint $workflow_dir
 
-    bao "cat $workflow_remote_path/auto-entrypoint.sh"
-    bao "cd $workflow_remote_path; export $setenv TMPDIR=\$HOME/scratch/tmp-run ; bash auto-entrypoint.sh" 
+    setenv=${setenv//,/ }
+    
+    bao "set -x; cat $workflow_remote_path/auto-entrypoint.sh; echo $setenv; cd $workflow_remote_path; export $setenv TMPDIR=\$HOME/scratch/tmp-run ; bash auto-entrypoint.sh" 
 }
 
 function bao-submit-array() {
