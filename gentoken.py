@@ -35,7 +35,7 @@ def gen(output):
 
     f.write(cjwt.decode())
 
-    payload={"action": "new token"}
+    payload={"action": "new token", "event": "done"}
 
     r=requests.post("https://data.odahub.io/secure/log", cookies=dict(rampartjwt=cjwt.decode()), data=json.dumps(payload), headers={'content-type': 'application/json'})
     print(r.status_code)

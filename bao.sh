@@ -152,7 +152,7 @@ function bao-workflow-prep-entrypoint() {
     echo "
         #!/bin/bash
         #SBATCH --ntasks 1
-        #SBATCH --time=01:00:00
+        #SBATCH --time=02:00:00
 
         source \$HOME/env/init.sh
 
@@ -176,6 +176,8 @@ function bao-run-workflow() {
     bao-workflow-prep-entrypoint $workflow_dir
 
     setenv=${setenv//,/ }
+
+    echo "setenv: $setenv"
     
     bao "set -x; cat $workflow_remote_path/auto-entrypoint.sh; echo $setenv; cd $workflow_remote_path; export $setenv TMPDIR=\$HOME/scratch/tmp-run ; bash auto-entrypoint.sh" 
 }
