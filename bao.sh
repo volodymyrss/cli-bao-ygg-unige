@@ -5,6 +5,18 @@ action=${1:-bao-login}
 shift
 args=$@
 
+me=$(readlink -f $0)
+
+function bao-help() {
+    echo "help for $me"
+    < bao.sh awk 'BEGIN {fstart=0} /^function bao/ {fstart=NR; print $2} fstart>0 { if ( $0 ~ /.+=\$\{[1-9].*/ ) {print $0} else {fstart=0} }'
+}
+
+function bao-self-test() { 
+    # perform self-test
+    echo TODO
+}
+
 function bao-get-config() {
     path=${1:?}
     v=$(< $HOME/.local/etc/bao/bao.yaml yq -r $path)
@@ -24,8 +36,11 @@ function bao-store-fact() {
 
 function bao-ask-fact() {
     fact=${1:?}
+    
+    echo "asking fact $fact" >&2
 
     fn=$HOME/.local/state/bao/$fact
+
 
     [ -s $fn ]
 }
@@ -70,19 +85,25 @@ function bao-download-dir() {
 }
 
 function bao-update-env() { 
+
+    echo "calling ${FUNCNAME[0]} $1" >&2
+
     bao_env_version=$(find $HOME/.local/share/bao -type f -exec md5sum {} \; | md5sum | cut -c1-8)
 
     fact=remote-env-installed/$bao_env_version
 
+    echo "fact: $fact" >&2
+
     if bao-ask-fact $fact; then
-        echo "bao remotely available $fact"
+        echo "bao remotely available $fact" >&2
     else
-        echo "bao not remotely available $fact, installing"
+        echo "bao not remotely available $fact, installing" >&2
         bao mkdir -pv env
         bao-upload-dir $HOME/.local/share/bao env
         bao 'mv env/ssh-config ~/.ssh/config'
         bao-store-fact $fact
     fi
+    echo "done ${FUNCNAME[0]} $1" >&2
 }
 
 function bao-upload-image() {
@@ -93,9 +114,17 @@ function bao-sync-data-rev() {
     bao bash env/sync.sh sync-rev ${1:?} ${2:-cons}
 }
 
+function bao-sync-data-revs() {
+    bao bash env/sync.sh sync-revs ${1:?from} ${2:?to} ${3:-cons}
+}
+
 
 function bao-sync-ic() {
     bao bash env/sync.sh sync-ic 
+}
+
+function bao-sync-idx() {
+    bao bash env/sync.sh sync-idx
 }
 
 
@@ -112,6 +141,8 @@ function bao-list-functions() {
 }
 
 function bao-upload-workflow() {
+    echo "calling ${FUNCNAME[0]} $1" >&2
+
     workflow_dir=${1:?}
 
     bao-update-env
@@ -122,12 +153,15 @@ function bao-upload-workflow() {
 
     workflow_remote_path=workflows/$(basename $workflow_dir)/$workflow_version
 
+    echo "workflow_version $workflow_version" >&2
+    echo "workflow_remote_path $workflow_remote_path" >&2
+
     fact=uploaded/$workflow_remote_path
 
     if bao-ask-fact $fact; then
-        echo "already uploaded"
+        echo "already uploaded" >&2
     else
-        echo "workflow $workflow_dir version/hash $workflow_version to $workflow_remote_path"
+        echo "workflow $workflow_dir version/hash $workflow_version to $workflow_remote_path" >&2
 
         bao-upload-dir $workflow_dir $workflow_remote_path
         echo $workflow_version | bao "cat -> $workflow_remote_path/workflow-version"
@@ -141,13 +175,18 @@ function bao-upload-workflow() {
 }
 
 function bao-workflow-remote-path() {
+    echo "calling ${FUNCNAME[0]} $1" >&2
     echo '$HOME/'$(bao-upload-workflow $workflow_dir | awk '/^\$/ {print substr($0,2,length($0))}' | yq -r .workflow_remote_path)
+    echo "done ${FUNCNAME[0]} $1" >&2
 }
 
 function bao-workflow-prep-entrypoint() {
     workflow_dir=${1:?}
 
+    echo "calling ${FUNCNAME[0]} $1"
+
     workflow_remote_path=$(bao-workflow-remote-path)
+
 
     echo "
         #!/bin/bash
@@ -166,6 +205,10 @@ function bao-workflow-prep-entrypoint() {
 
     echo "--> $workflow_remote_path/auto-entrypoint.sh"
     bao cat $workflow_remote_path/auto-entrypoint.sh
+}
+
+function bao-run() {
+    bao-run-workflow $@
 }
 
 function bao-run-workflow() {
@@ -189,6 +232,7 @@ function bao-submit-array() {
 
     echo "submitting to ${partition:=mono-shared-EL7}"
 
+    echo "will find remote path..."
     workflow_remote_path=$(bao-workflow-remote-path)
     bao-workflow-prep-entrypoint $workflow_dir
 
@@ -233,13 +277,13 @@ function bao-upload-images() {
 
     bao mkdir -pv scratch/singularity
 
-    for fn in /data/singularity/*/$pattern; do
+    for fn in /dev/shm/singularity/$pattern; do
         cat $fn | pv  | bao "cat - > scratch/singularity/$(basename $fn)"
     done
 }
 
 function bao-tail-last-job() {
-    bao 'tail -n 100 -f $(ls -tr workflows/*/*/*/*/*/* | tail -1) '
+    bao 'fn=$(ls -tr workflows/*/*/*/*/*/* | tail -1); echo "last job log:"; ls -ltor $fn; tail -n 100 -f $fn '
 }
 
 function bao-less-last-job() {
