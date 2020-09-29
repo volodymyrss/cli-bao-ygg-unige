@@ -13,6 +13,7 @@ function sync-rev-cons() {
 function sync-rev-nrt() {
     orbit=${1:?}
     mkdir -pv $REP_BASE_PROD_NRT/scw/$orbit
+    mkdir -pv $REP_BASE_PROD_NRT/aux/adp/$orbit.000
     mkdir -pv $REP_BASE_PROD_NRT/aux/adp/$orbit.001
 
     rsync -avu isdc-in01:/isdc/pvphase/nrt/ops/scw/$orbit/ $REP_BASE_PROD_NRT/scw/$orbit/

@@ -10,7 +10,9 @@ function report-action() {
     echo "extra_json $extra_json"
 
     jwt=$(cat $HOME/.dataapi-jwt)
-    curl  https://data.odahub.io/secure/log --cookie "rampartjwt=${jwt}" --data '
+
+    #TODO: recover
+    echo curl  https://data.odahub.io/secure/log --cookie "rampartjwt=${jwt}" --data '
 {
     '"$extra_json"'
     "source": "'${workflow_source}'", 

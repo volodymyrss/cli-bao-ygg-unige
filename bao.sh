@@ -54,17 +54,17 @@ function bao-mount() {
     mkdir -pv $mountpoint
 
     if  [ ${bao_ssh_mode:-sshpass} == "sshpass" ]; then
-        sshfs baobab2.unige.ch:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige $(whoami))' ssh';
+        sshfs baobab2.hpc.unige.ch:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige $(whoami))' ssh';
     else
-        sshfs baobab2.unige.ch:/ $mountpoint;
+        sshfs baobab2.hpc.unige.ch:/ $mountpoint;
     fi
 }
 
 function bao-login() {
     if  [ ${bao_ssh_mode:-sshpass} == "sshpass" ]; then
-        sshpass -f <(keyring get unige $(whoami)) ssh -Y baobab2.unige.ch $@;
+        sshpass -f <(keyring get unige $(whoami)) ssh -Y baobab2.hpc.unige.ch $@;
     else
-        ssh -Y baobab2.unige.ch $@;
+        ssh -Y baobab2.hpc.unige.ch $@;
     fi
 }
 
@@ -191,7 +191,7 @@ function bao-workflow-prep-entrypoint() {
     echo "
         #!/bin/bash
         #SBATCH --ntasks 1
-        #SBATCH --time=02:00:00
+        #SBATCH --time=${batch_time:-02:00:00}
 
         source \$HOME/env/init.sh
 
@@ -316,6 +316,11 @@ function bao-squeue() {
 function bao-upload-token() {
     bao-gentoken -o jwt 
     cat jwt | bao 'cat -> .dataapi-jwt' 
+    rm -fv jwt
+}
+
+function bao-upload-dda-token() {
+    cat $HOME/.dda-token | bao 'umask 077; cat -> .dda-token' 
     rm -fv jwt
 }
 
