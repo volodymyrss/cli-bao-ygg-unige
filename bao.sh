@@ -330,6 +330,11 @@ function bao-find-exceptions() {
     echo
 }
 
+function bao-sync-ic-version() {
+    version=${1:?}
+    bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ scratch/data/ic-collection/$version/
+}
+
 function bao-sacct() {
     since=${1:-$(date +%Y-%m-%d)}
     bao sacct --starttime 2020-03-06 --format=User,JobID,Jobname,partition,state,time,start,end,elapsed,elapsedraw,timelimitraw,MaxRss,MaxVMSize,nnodes,ncpus,nodelist
