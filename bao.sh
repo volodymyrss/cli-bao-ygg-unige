@@ -2,10 +2,12 @@
 
 action=${1:-bao-login}
 
+
 shift
 args=$@
 
 me=$(readlink -f $0)
+
 
 function bao-help() {
     echo "help for $me"
@@ -53,18 +55,19 @@ function bao-mount() {
     fusermount -u $mountpoint || echo 'can not unmount'
     mkdir -pv $mountpoint
 
-    if  [ ${bao_ssh_mode:-sshpass} == "sshpass" ]; then
-        sshfs baobab2.hpc.unige.ch:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige $(whoami))' ssh';
+    if  [ ${bao_ssh_mode:-key} == "sshpass" ]; then
+        sshfs ${BAOBAB_LOGIN_NODE}:/ $mountpoint -o ssh_command='sshpass -f '<(keyring get unige $(whoami))' ssh';
     else
-        sshfs baobab2.hpc.unige.ch:/ $mountpoint;
+        sshfs ${BAOBAB_LOGIN_NODE}:/ $mountpoint;
     fi
 }
 
 function bao-login() {
-    if  [ ${bao_ssh_mode:-sshpass} == "sshpass" ]; then
-        sshpass -f <(keyring get unige $(whoami)) ssh -Y baobab2.hpc.unige.ch $@;
+    if  [ ${bao_ssh_mode:-key} == "sshpass" ]; then
+        sshpass -f <(keyring get unige $(whoami)) ssh -Y ${BAOBAB_LOGIN_NODE} $@;
     else
-        ssh -Y baobab2.hpc.unige.ch $@;
+        set -x
+        ssh -Y ${BAOBAB_LOGIN_NODE} $@;
     fi
 }
 
@@ -332,7 +335,7 @@ function bao-find-exceptions() {
 
 function bao-sync-ic-version() {
     version=${1:?}
-    bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ scratch/data/ic-collection/$version/
+    bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ scratch/data/integral/ic-collection/$version/
 }
 
 function bao-sacct() {
@@ -343,6 +346,7 @@ function bao-sacct() {
 }
 
 
+export BAOBAB_LOGIN_NODE=${BAOBAB_LOGIN_NODE:-baobab2.hpc.unige.ch}
 
 
 if echo $action | grep ^bao-; then
