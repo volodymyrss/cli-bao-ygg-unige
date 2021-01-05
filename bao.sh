@@ -117,6 +117,10 @@ function bao-sync-data-rev() {
     bao bash env/sync.sh sync-rev ${1:?} ${2:-cons}
 }
 
+function bao-sync-cat() {
+    bao bash env/sync.sh sync-cat
+}
+
 function bao-sync-data-revs() {
     bao bash env/sync.sh sync-revs ${1:?from} ${2:?to} ${3:-cons}
 }
@@ -264,7 +268,7 @@ function bao-submit-array() {
             echo -n 'submitted at ' > \$logfile
             date >>  \$logfile
 
-            sbatch --mem-per-cpu 16000  --partition ${partition} --export=ALL --output \$logfile $workflow_remote_path/auto-entrypoint.sh
+            sbatch --profile=all --mem-per-cpu 4000  --partition ${partition} --export=ALL --output \$logfile $workflow_remote_path/auto-entrypoint.sh
         ); let 'i++'; done < envlist.sh 
     " | bao "cat -> $taskdir/submit-array.sh"
 
@@ -286,7 +290,8 @@ function bao-upload-images() {
 }
 
 function bao-tail-last-job() {
-    bao 'fn=$(ls -tr workflows/*/*/*/*/*/* | tail -1); echo "last job log:"; ls -ltor $fn; tail -n 100 -f $fn '
+    n=${1:-1000}
+    bao 'fn=$(ls -tr workflows/*/*/*/*/*/* | tail -1); echo "last job log:"; ls -ltor $fn; tail -n '${n}' -f $fn '
 }
 
 function bao-less-last-job() {
@@ -335,7 +340,11 @@ function bao-find-exceptions() {
 
 function bao-sync-ic-version() {
     version=${1:?}
-    bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ scratch/data/integral/ic-collection/$version/
+    bao rsync -avuL login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ scratch/data/integral/ic-collection/$version/
+}
+
+function bao-sync-resources() {
+    bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/data/resources/ scratch/data/resources/
 }
 
 function bao-sacct() {

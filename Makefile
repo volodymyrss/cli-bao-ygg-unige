@@ -9,8 +9,13 @@ install: bao.sh bao.yaml
 	for f in $(shell ls share); do \
             install -m 400 -v share/$$f $$HOME/.local/share/bao/$$f; \
 	done
+	echo "export BAOBAB_LOGIN_NODE=login1.yggdrasil.hpc.unige.ch; bao "'$$@' > $$HOME/.local/bin/ygg
+	chmod +x $$HOME/.local/bin/ygg
 	for fn in $(shell bash bao.sh bao-list-functions | sort -u | grep ^bao); do \
             echo "bao $$fn "'$$@' > $$HOME/.local/bin/$$fn; \
 	    chmod +x $$HOME/.local/bin/$$fn; \
         done
-    
+	for fn in $(shell bash bao.sh bao-list-functions | sort -u | grep ^bao | sed 's/bao/ygg/'); do \
+            echo "bao $$fn "'$$@' > $$HOME/.local/bin/$$fn; \
+	    chmod +x $$HOME/.local/bin/$$fn; \
+        done

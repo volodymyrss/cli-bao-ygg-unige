@@ -36,4 +36,11 @@ function sync-ic() {
     rsync -Lzrtv isdcarc.unige.ch::arc/FTP/arc_distr/ic_tree/prod/ $REP_BASE_PROD
 }
 
+
+function sync-cat() {
+    mkdir -pv $REP_BASE_PROD/cat/
+
+    rsync -avu login01.astro.unige.ch:/isdc/arc/rev_3/cat/ $REP_BASE_PROD/cat/
+}
+
 $@
