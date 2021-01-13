@@ -1,6 +1,7 @@
 VERSION=$(shell git describe --tags)
 
 install: bao.sh bao.yaml
+	mkdir -p $$HOME/.local/bin $$HOME/.local/etc/bao $$HOME/.local/share/bao
 	rm -v $$HOME/.local/bin/bao-* || true
 	install -m 755 -v bao.sh $$HOME/.local/bin/bao
 	install -m 755 -v gentoken.py $$HOME/.local/bin/bao-gentoken
