@@ -233,9 +233,9 @@ function bao-run-workflow() {
 }
 
 function bao-submit-array() {
-    workflow_dir=${1:?}
-    argvar=${2:?}
-    arglist=${3:?}
+    workflow_dir=${1:?workflow dir}
+    argvar=${2:?argvar}
+    arglist=${3:?arglist}
 
     echo "submitting to ${partition:=mono-shared-EL7}"
 
