@@ -16,6 +16,6 @@ install: bao.sh bao.yaml
 	    chmod +x $$HOME/.local/bin/$$fn; \
         done
 	for fn in $(shell bash bao.sh bao-list-functions | sort -u | grep ^bao | sed 's/bao/ygg/'); do \
-            echo "bao $$fn "'$$@' > $$HOME/.local/bin/$$fn; \
+            echo "ygg $$fn "'$$@' | awk '{gsub("ygg-", "bao-"); print}' > $$HOME/.local/bin/$$fn; \
 	    chmod +x $$HOME/.local/bin/$$fn; \
         done

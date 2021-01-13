@@ -29,7 +29,7 @@ function bao-get-config() {
 function bao-store-fact() {
     fact=${1:?}
 
-    fn=$HOME/.local/state/bao/$fact
+    fn=$HOME/.local/state/$BAOBAB_LOGIN_NODE/$fact
 
     mkdir -pv $(dirname $fn)
 
@@ -41,7 +41,7 @@ function bao-ask-fact() {
     
     echo "asking fact $fact" >&2
 
-    fn=$HOME/.local/state/bao/$fact
+    fn=$HOME/.local/state/$BAOBAB_LOGIN_NODE/$fact
 
 
     [ -s $fn ]
@@ -328,7 +328,7 @@ function bao-upload-token() {
 }
 
 function bao-upload-dda-token() {
-    cat $HOME/.dda-token | bao 'umask 077; cat -> .dda-token' 
+    cat $HOME/.dda-token | bao 'chmod u+w .dda-token;umask 077; cat -> .dda-token' 
     rm -fv jwt
 }
 
@@ -340,11 +340,13 @@ function bao-find-exceptions() {
 
 function bao-sync-ic-version() {
     version=${1:?}
-    bao rsync -avuL login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ scratch/data/integral/ic-collection/$version/
+    eval $(ygg cat \$HOME/env/init.sh | grep DATA_ROOT=)
+    bao rsync -avuL login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ $DATA_ROOT/ic-collection/$version/
 }
 
 function bao-sync-resources() {
-    bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/data/resources/ scratch/data/resources/
+    eval $(ygg cat \$HOME/env/init.sh | grep DATA_ROOT=)
+    bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/data/resources/ $DATA_ROOT/resources/
 }
 
 function bao-sacct() {
