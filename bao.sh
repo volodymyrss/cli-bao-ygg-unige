@@ -340,12 +340,12 @@ function bao-find-exceptions() {
 
 function bao-sync-ic-version() {
     version=${1:?}
-    eval $(ygg cat \$HOME/env/init.sh | grep DATA_ROOT=)
+    eval $(bao cat \$HOME/env/init.sh | grep DATA_ROOT=)
     bao rsync -avuL login01.astro.unige.ch:/unsaved/astro/savchenk/osa11/ic-collection/$version/ $DATA_ROOT/ic-collection/$version/
 }
 
 function bao-sync-resources() {
-    eval $(ygg cat \$HOME/env/init.sh | grep DATA_ROOT=)
+    eval $(bao cat \$HOME/env/init.sh | grep DATA_ROOT=)
     bao rsync -avu login01.astro.unige.ch:/unsaved/astro/savchenk/data/resources/ $DATA_ROOT/resources/
 }
 
@@ -356,6 +356,9 @@ function bao-sacct() {
     # summarize quality!
 }
 
+function bao-inspect-archives() {
+    bao 'source env/init.sh; echo "REP_BASE_PROD: $REP_BASE_PROD"; echo "found revolutions in REP_BASE_PROD: "$(ls  $REP_BASE_PROD/scw | wc -l)'
+}
 
 export BAOBAB_LOGIN_NODE=${BAOBAB_LOGIN_NODE:-baobab2.hpc.unige.ch}
 
